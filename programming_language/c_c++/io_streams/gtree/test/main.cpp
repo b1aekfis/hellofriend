@@ -1,0 +1,100 @@
+/*
+    refactor the directory structure graphics printed by the "tree" command with "/a" parameter on Windows, test ver.
+*/
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+#include <locale>
+#include <codecvt>
+
+    /*
+        recovery parameters:
+
+        + 002B  r  251C
+        - 002D  r  2500
+        \ 005C  r  2514
+        | 007C  r  2502
+
+    */
+
+#define clsChild    '\u002B'
+#define clsDash     '\u002D'
+#define clsLast     '\u005C'
+#define clsParent   '\u007C'
+
+#define stdChild    L'\u251C'
+#define stdDash     L'\u2500'
+#define stdLast     L'\u2514'
+#define stdParent   L'\u2502'
+
+#define _FILE       "test.md"
+
+using namespace std;
+
+int main(){
+
+    /*
+        steps to delete the first 3 lines in the file
+    */
+
+    ifstream ifs(_FILE);
+    ofstream tmp("tmp.txt"); // create temp
+
+    tmp << "```\n";
+    tmp << ".\n"; 
+    string line;
+    int i = 0;
+    while(getline(ifs, line)){
+            if(i<3){
+                ++i;
+            }
+            else{
+               tmp << line+'\n';
+            }
+    }
+
+    ifs.close();
+
+    tmp << "```\n";
+    tmp.close();
+
+    /* 
+        main 
+    */
+
+    wifstream ifs_tmp("tmp.txt");
+
+    wstringstream ss;
+    ss << ifs_tmp.rdbuf();
+
+    ifs_tmp.close();
+    remove("tmp.txt"); // remove temp
+
+    wstring s = ss.str();
+
+    for(int i=0; i < s.size(); ++i){
+        if(s[i]==clsChild && s[i+1]==clsDash && s[i+2]==clsDash && s[i+3]==clsDash){
+            s[i]=stdChild;
+        }
+        else if(s[i]==clsDash){
+            s[i]=stdDash;
+        }
+        else if(s[i]==clsLast){
+            s[i]=stdLast;
+        }
+        else if(s[i]==clsParent){
+            s[i]=stdParent;
+        }
+    }
+
+    wofstream ofs(_FILE);
+    const locale utf8_locale = locale(locale(), new codecvt_utf8<wchar_t>());
+    ofs.imbue(utf8_locale);
+
+    ofs << s;
+
+    ofs.close();
+    return 0;
+}
